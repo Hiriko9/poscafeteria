@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { abrirCaja as construirApertura, validarMontoInicial } from '../../domain/usecases/abrirCaja.js';
 import { convertirSolesACentimos } from '../../utils/convertirSolesACentimos.js';
 import { useCajaContext } from '../../context/CajaContext.jsx';
@@ -12,9 +12,11 @@ function AperturaCajaModal() {
   const [monto, setMonto] = useState('');
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const envioEnCurso = useRef(false);
 
   async function manejarEnvio(evento) {
     evento.preventDefault();
+    if (envioEnCurso.current) return;
     setError('');
 
     let montoInicial;
@@ -31,6 +33,7 @@ function AperturaCajaModal() {
       return;
     }
 
+    envioEnCurso.current = true;
     setGuardando(true);
     try {
       construirApertura({ montoInicial });
@@ -41,6 +44,7 @@ function AperturaCajaModal() {
       setError(mensaje);
       mostrarToast(mensaje, 'error');
     } finally {
+      envioEnCurso.current = false;
       setGuardando(false);
     }
   }

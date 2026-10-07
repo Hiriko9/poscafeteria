@@ -56,3 +56,6 @@ Dependencias permitidas, siempre hacia adentro:
 - El proyecto usa git. Al terminar cada fase: ejecuta las pruebas y pnpm build; si pasan, haz un commit local con el mensaje "Fase N: descripción".
 - Antes de cada commit, muestra git status y revisa que no haya archivos inesperados.
 - Nunca hagas git push, git reset --hard, git clean ni cambies la configuración global de git.
+
+## Servidores y procesos
+- Si inicias pnpm dev o pnpm preview para verificar algo, usa los puertos fijos 5173 (dev) y 4173 (preview), y al terminar detén SOLO el proceso que tú iniciaste (por su PID). Nunca dejes servidores abiertos ni uses taskkill /IM node.exe. Si un puerto está ocupado, no cambies de puerto: avísame.

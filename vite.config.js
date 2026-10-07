@@ -43,6 +43,14 @@ function precachePlugin() {
 
 export default defineConfig({
   plugins: [react(), precachePlugin()],
+  server: {
+    port: 5173,
+    strictPort: true
+  },
+  preview: {
+    port: 4173,
+    strictPort: true
+  },
   test: {
     environment: 'node',
     globals: true,

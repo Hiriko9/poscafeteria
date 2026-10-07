@@ -11,6 +11,11 @@ export const ESTADOS_MESA = Object.freeze({
   OCUPADA: 'OCUPADA'
 });
 
+export const ESTADOS_PEDIDO = Object.freeze({
+  PENDIENTE: 'PENDIENTE',
+  PAGADO: 'PAGADO'
+});
+
 export const TIPOS_PEDIDO = Object.freeze({
   COMER_AQUI: 'COMER_AQUI',
   PARA_LLEVAR: 'PARA_LLEVAR'

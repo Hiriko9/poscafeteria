@@ -2,7 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { useState } from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 import { db } from './db/database.js';
 import { resetDatabase } from './db/testUtils.js';
@@ -61,6 +61,26 @@ describe('Fase 4: apertura y layout', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.getByRole('dialog', { name: 'Apertura de caja' })).toBeInTheDocument();
+  });
+
+  it('avisa si la tablet está en vertical sin bloquear la apertura de caja', async () => {
+    const matchMediaOriginal = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    });
+
+    try {
+      render(<App />);
+      expect(await screen.findByText(
+        'Gira la tablet a horizontal para una mejor experiencia'
+      )).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'Apertura de caja' })).toBeInTheDocument();
+    } finally {
+      if (matchMediaOriginal) window.matchMedia = matchMediaOriginal;
+      else delete window.matchMedia;
+    }
   });
 
   it.each(['', '-1.00', 'texto', '1.234'])(

@@ -22,6 +22,7 @@ function POSLayout() {
   const [vistaColumnaComanda, setVistaColumnaComanda] = useState('COMANDA');
   const [ventaHistorial, setVentaHistorial] = useState(null);
   const [actualizacionDisponible, setActualizacionDisponible] = useState(false);
+  const [orientacionVertical, setOrientacionVertical] = useState(false);
   const cajaCerrada = estado === 'CAJA_CERRADA';
   const cargando = estado === 'CARGANDO';
   const bloqueada = cajaCerrada || cargando || estado === 'ERROR';
@@ -34,6 +35,15 @@ function POSLayout() {
     const avisarActualizacion = () => setActualizacionDisponible(true);
     window.addEventListener('pos:actualizacion-disponible', avisarActualizacion);
     return () => window.removeEventListener('pos:actualizacion-disponible', avisarActualizacion);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+    const consulta = window.matchMedia('(orientation: portrait)');
+    const actualizarOrientacion = (evento) => setOrientacionVertical(evento.matches);
+    setOrientacionVertical(consulta.matches);
+    consulta.addEventListener?.('change', actualizarOrientacion);
+    return () => consulta.removeEventListener?.('change', actualizarOrientacion);
   }, []);
 
   useEffect(() => {
@@ -70,6 +80,14 @@ function POSLayout() {
   return (
     <main className="grid h-screen min-h-0 grid-cols-12 grid-rows-[4rem_minmax(0,1fr)] overflow-hidden bg-hueso text-cafe">
       <TopBar onCerrarCaja={solicitarCierre} />
+      {orientacionVertical && (
+        <aside
+          className="fixed inset-x-0 top-16 z-10 bg-arena px-4 py-2 text-center text-sm text-cafe"
+          role="status"
+        >
+          Gira la tablet a horizontal para una mejor experiencia
+        </aside>
+      )}
       {actualizacionDisponible && (
         <aside
           aria-label="Actualización disponible"

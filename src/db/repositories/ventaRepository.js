@@ -1,4 +1,5 @@
 import { db } from '../database.js';
+import { ESTADOS_MESA, MESA_VIRTUAL_ID } from '../../utils/constants.js';
 
 export async function siguienteSecuencia(anio) {
   if (!Number.isInteger(anio) || anio < 0 || anio > 9999) {
@@ -42,8 +43,8 @@ export async function registrarVenta({ pedido, detalles, pago }) {
       await db.detallePedido.bulkAdd(detallesConPedido);
       await db.pagos.add({ ...pago, pedidoId });
 
-      if (pedido.mesaId !== 0) {
-        const mesaActualizada = await db.mesas.update(pedido.mesaId, { estado: 'LIBRE' });
+      if (pedido.mesaId !== MESA_VIRTUAL_ID) {
+        const mesaActualizada = await db.mesas.update(pedido.mesaId, { estado: ESTADOS_MESA.LIBRE });
 
         if (mesaActualizada === 0) {
           throw new Error(`No existe la mesa con id ${pedido.mesaId}.`);

@@ -32,7 +32,7 @@
 - Ejemplo: 2 Latte × 1200 + 1 Muffin × 850 → Subtotal 3250, IGV 585, Total 3835; recibido 5000 → vuelto 1165.
 - Los precios del catálogo no incluyen IGV.
 - "Para llevar" usa la mesa virtual 0 y no la marca como ocupada.
-- La mesa física pasa a OCUPADA al abrir su comanda y vuelve a LIBRE al confirmar el pago (comportamiento a confirmar con el cliente).
+- La mesa física pasa a OCUPADA al agregar el primer producto a su comanda y vuelve a LIBRE al cancelar la comanda o confirmar el pago.
 - Cierre Z: efectivo esperado = monto inicial + ventas en efectivo; diferencia = contado - esperado.
 
 ## Validaciones

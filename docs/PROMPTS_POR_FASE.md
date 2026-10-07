@@ -28,7 +28,7 @@ Adjuntar: `#file:docs/ARQUITECTURA.md`
 > Implementa `ComandaPanel`, `ComandaItem`, `TotalesResumen`, `PagoPanel`, `TicketConfirmado`, `HistorialPanel` e `HistorialItem`. El botón Cobrar se deshabilita según `puedeCobrar` y se bloquea durante `PROCESANDO_PAGO`.
 
 ## Fase 7: PWA y offline
-> Crea `public/manifest.json`, `public/service-worker.js` y `src/serviceWorkerRegistration.js` según ARQUITECTURA.md, registra el SW en `main.jsx` y solicita `navigator.storage.persist()`. Explícame cómo verificarlo con Chrome DevTools (Application) y Lighthouse.
+> Crea `public/manifest.json`, `public/service-worker.js` y `src/serviceWorkerRegistration.js` según ARQUITECTURA.md, registra el SW en `main.jsx` y solicita `navigator.storage.persist()`. Comprueba instalabilidad, manifest y Service Workers en Chrome DevTools > Application. Las versiones recientes de Lighthouse ya no incluyen la categoría PWA.
 
 ## Fase 8: Pulido y pruebas
 > Agrega un Error Boundary global, notificaciones toast y revisa accesibilidad y contraste. Revisa todo el proyecto contra `.github/copilot-instructions.md` y dime qué reglas no se cumplen.

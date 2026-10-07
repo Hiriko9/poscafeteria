@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   abrirCaja as construirApertura,
   validarMontoInicial
@@ -16,6 +16,8 @@ export function useCaja() {
   const [estado, setEstado] = useState('CARGANDO');
   const [error, setError] = useState(null);
   const [resumenCierre, setResumenCierre] = useState(null);
+  const aperturaEnCurso = useRef(false);
+  const cierreEnCurso = useRef(false);
 
   const refrescarSesion = useCallback(async () => {
     setEstado('CARGANDO');
@@ -74,6 +76,9 @@ export function useCaja() {
   }, [sesion?.id]);
 
   const abrir = useCallback(async (montoInicial) => {
+    if (aperturaEnCurso.current) {
+      throw new Error('La apertura de caja ya se está procesando.');
+    }
     setError(null);
     const validacion = validarMontoInicial(montoInicial);
 
@@ -82,6 +87,7 @@ export function useCaja() {
       throw new TypeError(validacion.error);
     }
 
+    aperturaEnCurso.current = true;
     try {
       const apertura = construirApertura({
         montoInicial,
@@ -95,10 +101,16 @@ export function useCaja() {
     } catch (errorApertura) {
       setError(`No se pudo abrir la caja: ${errorApertura.message}`);
       throw errorApertura;
+    } finally {
+      aperturaEnCurso.current = false;
     }
   }, []);
 
   const cerrar = useCallback(async ({ montoCierreEfectivo, montoCierreTarjetas = 0 }) => {
+    if (cierreEnCurso.current) {
+      throw new Error('El cierre de caja ya se está procesando.');
+    }
+    cierreEnCurso.current = true;
     setError(null);
 
     try {
@@ -121,6 +133,8 @@ export function useCaja() {
     } catch (errorCierre) {
       setError(`No se pudo cerrar la caja: ${errorCierre.message}`);
       throw errorCierre;
+    } finally {
+      cierreEnCurso.current = false;
     }
   }, [sesion?.id]);
 

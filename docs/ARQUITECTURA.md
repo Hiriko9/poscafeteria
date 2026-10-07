@@ -83,7 +83,7 @@ poscafeteria-pwa/
 - `public/manifest.json`: `display: "standalone"`, `orientation: "landscape"`, `theme_color: "#5C3A21"`, `background_color: "#F4F0EA"`, íconos 192, 512 y maskable.
 - `public/service-worker.js`: precarga el app shell en `install`, limpia cachés antiguas en `activate`, estrategia cache-first para estáticos y respaldo a `index.html` en navegaciones sin conexión.
 - `src/serviceWorkerRegistration.js`: registra el SW en el evento `load`. Funciona solo con HTTPS o `localhost`.
-- Primer arranque con conexión para que se guarden los archivos con hash de `/assets`. Para un precaché completo se puede usar `vite-plugin-pwa`.
+- Primer arranque con conexión para que se guarden los archivos con hash de `/assets`. El plugin local de Vite en `vite.config.js` genera el precaché desde los archivos emitidos en `dist`, incluidas las fuentes locales de Inter.
 - Se solicita `navigator.storage.persist()` para que el navegador no elimine IndexedDB.
 
 ## 7. Diseño visual (Warm Café)

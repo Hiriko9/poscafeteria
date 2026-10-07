@@ -1,6 +1,7 @@
 import { db } from '../database.js';
+import { ESTADOS_MESA, ESTADOS_PEDIDO, MESA_VIRTUAL_ID } from '../../utils/constants.js';
 
-const estadosMesa = new Set(['LIBRE', 'OCUPADA']);
+const estadosMesa = new Set(Object.values(ESTADOS_MESA));
 
 export async function listarMesas() {
   const mesas = await db.mesas.toArray();
@@ -12,7 +13,7 @@ export async function cambiarEstadoMesa(id, estado) {
     throw new TypeError('El estado de mesa debe ser LIBRE u OCUPADA.');
   }
 
-  if (id === 0 && estado === 'OCUPADA') {
+  if (id === MESA_VIRTUAL_ID && estado === ESTADOS_MESA.OCUPADA) {
     throw new Error('La mesa virtual Para llevar no puede marcarse como OCUPADA.');
   }
 
@@ -27,20 +28,20 @@ export async function cambiarEstadoMesa(id, estado) {
 
 export async function liberarMesasOcupadasSinPedidoPendiente() {
   return db.transaction('rw', db.mesas, db.pedidos, async () => {
-    const mesasOcupadas = await db.mesas.where('estado').equals('OCUPADA').toArray();
+    const mesasOcupadas = await db.mesas.where('estado').equals(ESTADOS_MESA.OCUPADA).toArray();
     const idsLiberadas = [];
 
     for (const mesa of mesasOcupadas) {
-      if (mesa.id === 0) continue;
+      if (mesa.id === MESA_VIRTUAL_ID) continue;
 
       const pedidosPendientes = await db.pedidos
         .where('mesaId')
         .equals(mesa.id)
-        .filter((pedido) => pedido.estado !== 'PAGADO')
+        .filter((pedido) => pedido.estado !== ESTADOS_PEDIDO.PAGADO)
         .count();
 
       if (pedidosPendientes === 0) {
-        await db.mesas.update(mesa.id, { estado: 'LIBRE' });
+        await db.mesas.update(mesa.id, { estado: ESTADOS_MESA.LIBRE });
         idsLiberadas.push(mesa.id);
       }
     }

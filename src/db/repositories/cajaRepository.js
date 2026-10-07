@@ -1,4 +1,5 @@
 import { db } from '../database.js';
+import { ESTADOS_CAJA, ESTADOS_PEDIDO, METODOS_PAGO } from '../../utils/constants.js';
 
 function validarMonto(monto, nombre) {
   if (!Number.isSafeInteger(monto) || monto < 0) {
@@ -14,12 +15,12 @@ async function obtenerVentasEfectivoSesion(sesionId) {
     : [];
 
   return pagos
-    .filter(({ metodo }) => metodo === 'EFECTIVO')
+    .filter(({ metodo }) => metodo === METODOS_PAGO.EFECTIVO)
     .reduce((total, pago) => total + pago.montoCobrado, 0);
 }
 
 export async function obtenerSesionAbierta() {
-  return db.cajaSesion.where('estado').equals('ABIERTA').first();
+  return db.cajaSesion.where('estado').equals(ESTADOS_CAJA.ABIERTA).first();
 }
 
 export async function obtenerResumenCierreCaja(sesionId) {
@@ -29,7 +30,7 @@ export async function obtenerResumenCierreCaja(sesionId) {
 
   const sesion = await db.cajaSesion.get(sesionId);
 
-  if (!sesion || sesion.estado !== 'ABIERTA') {
+  if (!sesion || sesion.estado !== ESTADOS_CAJA.ABIERTA) {
     throw new Error('No se encontró una sesión ABIERTA para calcular el cierre.');
   }
 
@@ -50,10 +51,10 @@ export async function obtenerResumenCierreCaja(sesionId) {
 
 export async function abrirCaja({ montoInicial, fechaApertura = new Date().toISOString() }) {
   validarMonto(montoInicial, 'El monto inicial');
-  const sesion = { fechaApertura, montoInicial, estado: 'ABIERTA' };
+  const sesion = { fechaApertura, montoInicial, estado: ESTADOS_CAJA.ABIERTA };
 
   return db.transaction('rw', db.cajaSesion, async () => {
-    const sesionExistente = await db.cajaSesion.where('estado').equals('ABIERTA').first();
+    const sesionExistente = await db.cajaSesion.where('estado').equals(ESTADOS_CAJA.ABIERTA).first();
 
     if (sesionExistente) {
       throw new Error('No se puede abrir otra caja mientras exista una sesión ABIERTA.');
@@ -78,7 +79,7 @@ export async function cerrarCaja({
     db.pedidos,
     db.pagos,
     async () => {
-      const sesion = await db.cajaSesion.where('estado').equals('ABIERTA').first();
+      const sesion = await db.cajaSesion.where('estado').equals(ESTADOS_CAJA.ABIERTA).first();
 
       if (!sesion) {
         throw new Error('No hay una sesión ABIERTA para cerrar.');
@@ -93,7 +94,7 @@ export async function cerrarCaja({
         montoCierreEfectivo,
         montoCierreTarjetas,
         diferencia,
-        estado: 'CERRADA'
+        estado: ESTADOS_CAJA.CERRADA
       };
 
       await db.cajaSesion.update(sesion.id, cierre);

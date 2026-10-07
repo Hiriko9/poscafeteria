@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cerrarCajaZ as calcularCierre } from '../../domain/usecases/cerrarCajaZ.js';
 import { useCajaContext } from '../../context/CajaContext.jsx';
 import { useComandaContext } from '../../context/ComandaContext.jsx';
@@ -19,6 +19,7 @@ function CierreCajaZModal({ onClose }) {
   const [confirmando, setConfirmando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const cierreEnCurso = useRef(false);
   const hayComandaEnCurso = comanda.items.length > 0 && comanda.estado !== 'PAGO_EXITOSO';
 
   useEffect(() => {
@@ -58,6 +59,7 @@ function CierreCajaZModal({ onClose }) {
   }, [efectivo, resumen, tarjetas]);
 
   async function manejarCierre() {
+    if (cierreEnCurso.current) return;
     if (hayComandaEnCurso) {
       const mensaje = 'Hay una comanda en curso. Cóbrala o cancélala antes de cerrar la caja.';
       setError(mensaje);
@@ -80,6 +82,7 @@ function CierreCajaZModal({ onClose }) {
       return;
     }
 
+    cierreEnCurso.current = true;
     setGuardando(true);
     setError('');
     try {
@@ -91,6 +94,7 @@ function CierreCajaZModal({ onClose }) {
       mostrarToast(errorCierre.message, 'error');
       setConfirmando(false);
     } finally {
+      cierreEnCurso.current = false;
       setGuardando(false);
     }
   }

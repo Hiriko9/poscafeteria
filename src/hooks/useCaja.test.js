@@ -39,6 +39,37 @@ describe('useCaja', () => {
     expect(await db.cajaSesion.count()).toBe(1);
   });
 
+  it('evita aperturas y cierres concurrentes desde el hook', async () => {
+    const { result } = renderHook(() => useCaja());
+    await waitFor(() => expect(result.current.estado).toBe('CAJA_CERRADA'));
+
+    let aperturaPrimera;
+    let aperturaDuplicada;
+    act(() => {
+      aperturaPrimera = result.current.abrirCaja(10000);
+      aperturaDuplicada = result.current.abrirCaja(10000);
+    });
+    await expect(aperturaDuplicada).rejects.toThrow(/ya se está procesando/);
+    await act(async () => aperturaPrimera);
+    expect(await db.cajaSesion.count()).toBe(1);
+
+    let cierrePrimero;
+    let cierreDuplicado;
+    act(() => {
+      cierrePrimero = result.current.cerrarCajaZ({
+        montoCierreEfectivo: 10000,
+        montoCierreTarjetas: 0
+      });
+      cierreDuplicado = result.current.cerrarCajaZ({
+        montoCierreEfectivo: 10000,
+        montoCierreTarjetas: 0
+      });
+    });
+    await expect(cierreDuplicado).rejects.toThrow(/ya se está procesando/);
+    await act(async () => cierrePrimero);
+    expect(await db.cajaSesion.where('estado').equals('CERRADA').count()).toBe(1);
+  });
+
   it('cierra la sesión aplicando el arqueo del repositorio y el dominio', async () => {
     const { result } = renderHook(() => useCaja());
     await waitFor(() => expect(result.current.estado).toBe('CAJA_CERRADA'));

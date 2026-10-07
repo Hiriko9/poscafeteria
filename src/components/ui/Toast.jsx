@@ -18,7 +18,7 @@ export function Toast({ toast, onCerrar }) {
       <p className="flex-1">{toast.mensaje}</p>
       <button
         aria-label="Cerrar notificación"
-        className="grid h-6 w-6 shrink-0 place-items-center rounded hover:bg-black/10"
+        className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded hover:bg-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cafe"
         onClick={() => onCerrar(toast.id)}
         type="button"
       >
