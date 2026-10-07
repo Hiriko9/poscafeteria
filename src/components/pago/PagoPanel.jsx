@@ -124,7 +124,11 @@ export default function PagoPanel({ onVolver, onPagoExitoso }) {
           <div aria-label="Montos rápidos" className="flex flex-wrap gap-2">
             <Button
               onClick={() =>
-                cambiarMonto((comanda.totales.total / 100).toFixed(2))
+                cambiarMonto(
+                  `${Math.floor(comanda.totales.total / 100)}.${String(
+                    comanda.totales.total % 100
+                  ).padStart(2, '0')}`
+                )
               }
               type="button"
               variant="secundaria"

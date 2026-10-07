@@ -9,6 +9,8 @@ Thumbs.db
 Desktop.ini
 ehthumbs.db
 Icon?
+!public/icons/
+!public/icons/*.png
 *.swp
 *.swo
 

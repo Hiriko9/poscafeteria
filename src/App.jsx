@@ -11,6 +11,7 @@ import CatalogoPanel from './components/catalogo/CatalogoPanel.jsx';
 import ComandaPanel from './components/comanda/ComandaPanel.jsx';
 import PagoPanel from './components/pago/PagoPanel.jsx';
 import TicketConfirmado from './components/pago/TicketConfirmado.jsx';
+import { aplicarActualizacionServiceWorker } from './serviceWorkerRegistration.js';
 
 function POSLayout() {
   const { estado, error: errorCaja } = useCajaContext();
@@ -20,9 +21,20 @@ function POSLayout() {
   const [pestanaMesas, setPestanaMesas] = useState('mesas');
   const [vistaColumnaComanda, setVistaColumnaComanda] = useState('COMANDA');
   const [ventaHistorial, setVentaHistorial] = useState(null);
+  const [actualizacionDisponible, setActualizacionDisponible] = useState(false);
   const cajaCerrada = estado === 'CAJA_CERRADA';
   const cargando = estado === 'CARGANDO';
   const bloqueada = cajaCerrada || cargando || estado === 'ERROR';
+  const hayComandaEnCurso =
+    comanda.items.length > 0 && comanda.estado !== 'PAGO_EXITOSO';
+  const bloquearActualizacion =
+    hayComandaEnCurso || comanda.estado === 'PROCESANDO_PAGO';
+
+  useEffect(() => {
+    const avisarActualizacion = () => setActualizacionDisponible(true);
+    window.addEventListener('pos:actualizacion-disponible', avisarActualizacion);
+    return () => window.removeEventListener('pos:actualizacion-disponible', avisarActualizacion);
+  }, []);
 
   useEffect(() => {
     if (comanda.estado === 'PAGO_EXITOSO' && pestanaMesas === 'mesas') {
@@ -58,6 +70,23 @@ function POSLayout() {
   return (
     <main className="grid h-screen min-h-0 grid-cols-12 grid-rows-[4rem_minmax(0,1fr)] overflow-hidden bg-hueso text-cafe">
       <TopBar onCerrarCaja={solicitarCierre} />
+      {actualizacionDisponible && (
+        <aside
+          aria-label="Actualización disponible"
+          className="fixed right-4 top-20 z-30 flex items-center gap-3 rounded-lg border border-arena bg-hueso p-3 text-sm shadow-lg"
+          role="status"
+        >
+          <span>Hay una nueva versión</span>
+          <button
+            className="min-h-11 rounded-lg bg-cafe px-4 font-semibold text-hueso disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={bloquearActualizacion}
+            onClick={aplicarActualizacionServiceWorker}
+            type="button"
+          >
+            Actualizar
+          </button>
+        </aside>
+      )}
       <div
         aria-hidden={bloqueada || undefined}
         className="col-span-12 grid min-h-0 grid-cols-12"
