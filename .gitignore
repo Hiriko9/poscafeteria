@@ -1,0 +1,13 @@
+node_modules/
+dist/
+graphify-out/
+!pnpm-lock.yaml
+
+# Archivos generados por sistemas operativos y editores
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+Icon?
+*.swp
+*.swo
