@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { calcularTotales, calcularVuelto } from '../domain/usecases/calcularTotales.js';
 import { construirPayloadVenta } from '../domain/usecases/confirmarVenta.js';
 import { registrarVenta, siguienteSecuencia } from '../db/repositories/ventaRepository.js';
+import { cambiarEstadoMesa } from '../db/repositories/mesaRepository.js';
 import { generarCodigoVenta } from '../utils/generarCodigoVenta.js';
 import { MESA_VIRTUAL_ID, TIPOS_PEDIDO } from '../utils/constants.js';
 
@@ -104,6 +105,9 @@ function reducer(estado, accion) {
 export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
   const [state, dispatch] = useReducer(reducer, estadoInicial);
   const procesandoRef = useRef(false);
+  const mesaEnUsoRef = useRef(null);
+  const actualizacionMesaRef = useRef(Promise.resolve());
+  const errorActualizacionMesaRef = useRef(null);
   const totales = useMemo(
     () => (state.items.length ? calcularTotales(state.items) : { subtotal: 0, igv: 0, total: 0 }),
     [state.items]
@@ -118,6 +122,44 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
     mesaSeleccionada &&
     state.estado !== 'PROCESANDO_PAGO' &&
     state.estado !== 'PAGO_EXITOSO';
+
+  useEffect(() => {
+    if (state.estado === 'PAGO_EXITOSO') {
+      mesaEnUsoRef.current = null;
+      return;
+    }
+
+    const mesaDeseada =
+      state.items.length > 0 &&
+      state.tipoPedido === TIPOS_PEDIDO.COMER_AQUI &&
+      Number.isSafeInteger(state.mesaId) &&
+      state.mesaId > MESA_VIRTUAL_ID
+        ? state.mesaId
+        : null;
+    const mesaAnterior = mesaEnUsoRef.current;
+
+    if (mesaAnterior === mesaDeseada) return;
+    mesaEnUsoRef.current = mesaDeseada;
+
+    actualizacionMesaRef.current = actualizacionMesaRef.current
+      .then(async () => {
+        if (mesaAnterior !== null) {
+          await cambiarEstadoMesa(mesaAnterior, 'LIBRE');
+        }
+        if (mesaDeseada !== null) {
+          await cambiarEstadoMesa(mesaDeseada, 'OCUPADA');
+        }
+        errorActualizacionMesaRef.current = null;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('pos:mesas-actualizadas'));
+        }
+      })
+      .catch((errorMesa) => {
+        const mensaje = `No se pudo actualizar el estado de la mesa: ${errorMesa.message}`;
+        errorActualizacionMesaRef.current = new Error(mensaje, { cause: errorMesa });
+        dispatch({ tipo: 'ERROR', error: mensaje });
+      });
+  }, [state.estado, state.items.length, state.mesaId, state.tipoPedido]);
 
   const agregarProducto = useCallback((producto, cantidad = 1) => {
     if (procesandoRef.current || state.estado === 'PAGO_EXITOSO') return;
@@ -165,6 +207,7 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
     if (
       !procesandoRef.current &&
       state.estado !== 'PAGO_EXITOSO' &&
+      tipoPedido !== state.tipoPedido &&
       tiposPedidoValidos.has(tipoPedido)
     ) {
       dispatch({ tipo: 'CAMBIAR_TIPO_PEDIDO', tipoPedido });
@@ -187,6 +230,10 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
       dispatch({ tipo: 'PROCESANDO_PAGO' });
 
       try {
+        await actualizacionMesaRef.current;
+        if (errorActualizacionMesaRef.current) {
+          throw errorActualizacionMesaRef.current;
+        }
         const ahora = new Date();
         const anio = ahora.getUTCFullYear();
         const secuencia = await siguienteSecuencia(anio);

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../database.js';
 import { resetDatabase } from '../testUtils.js';
-import { cambiarEstadoMesa, listarMesas } from './mesaRepository.js';
+import {
+  cambiarEstadoMesa,
+  liberarMesasOcupadasSinPedidoPendiente,
+  listarMesas
+} from './mesaRepository.js';
 
 describe('mesaRepository', () => {
   beforeEach(resetDatabase);
@@ -23,5 +27,20 @@ describe('mesaRepository', () => {
 
     await expect(cambiarEstadoMesa(0, 'OCUPADA')).rejects.toThrow('mesa virtual');
     expect(await db.mesas.get(0)).toMatchObject({ estado: 'LIBRE' });
+  });
+
+  it('libera mesas ocupadas sin pedido pendiente y conserva las vinculadas a uno', async () => {
+    await db.mesas.bulkAdd([
+      { id: 0, numero: 0, estado: 'OCUPADA' },
+      { id: 1, numero: 1, estado: 'OCUPADA' },
+      { id: 2, numero: 2, estado: 'OCUPADA' }
+    ]);
+    await db.pedidos.add({ codigoVenta: 'VEN-2026-0001', mesaId: 2, estado: 'PENDIENTE' });
+
+    await expect(liberarMesasOcupadasSinPedidoPendiente()).resolves.toEqual([1]);
+
+    expect(await db.mesas.get(0)).toMatchObject({ estado: 'OCUPADA' });
+    expect(await db.mesas.get(1)).toMatchObject({ estado: 'LIBRE' });
+    expect(await db.mesas.get(2)).toMatchObject({ estado: 'OCUPADA' });
   });
 });

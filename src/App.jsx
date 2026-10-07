@@ -6,6 +6,8 @@ import { useToast, ToastProvider } from './components/ui/Toast.jsx';
 import AperturaCajaModal from './components/modals/AperturaCajaModal.jsx';
 import CierreCajaZModal from './components/modals/CierreCajaZModal.jsx';
 import TopBar from './components/layout/TopBar.jsx';
+import MesasPanel from './components/mesas/MesasPanel.jsx';
+import CatalogoPanel from './components/catalogo/CatalogoPanel.jsx';
 
 function POSLayout() {
   const { estado, error: errorCaja } = useCajaContext();
@@ -36,8 +38,12 @@ function POSLayout() {
         <section
           aria-label="Mesas e historial"
           className="col-span-3 min-w-0 border-r border-arena"
-        />
-        <section aria-label="Catálogo" className="col-span-5 min-w-0 border-r border-arena" />
+        >
+          <MesasPanel />
+        </section>
+        <section aria-label="Catálogo" className="col-span-5 min-w-0 border-r border-arena">
+          <CatalogoPanel />
+        </section>
         <section aria-label="Comanda y pago" className="col-span-4 min-w-0" />
       </div>
       {cargando && (

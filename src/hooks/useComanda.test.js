@@ -105,6 +105,39 @@ describe('useComanda', () => {
     expect(await db.pedidos.count()).toBe(1);
   });
 
+  it('ocupa la mesa al agregar el primer producto y la libera al cancelar la comanda', async () => {
+    await db.mesas.update(1, { estado: 'LIBRE' });
+    const { result } = renderHook(() => useComanda({ cajaSesionId: cajaSesion.id }));
+
+    act(() => {
+      result.current.seleccionarMesa(1);
+      result.current.agregarProducto(latte);
+    });
+
+    await waitFor(async () => {
+      expect(await db.mesas.get(1)).toMatchObject({ estado: 'OCUPADA' });
+    });
+
+    act(() => result.current.limpiar());
+
+    await waitFor(async () => {
+      expect(await db.mesas.get(1)).toMatchObject({ estado: 'LIBRE' });
+    });
+  });
+
+  it('no ocupa una mesa física cuando la comanda es Para llevar', async () => {
+    await db.mesas.update(1, { estado: 'LIBRE' });
+    const { result } = renderHook(() => useComanda({ cajaSesionId: cajaSesion.id }));
+
+    act(() => {
+      result.current.cambiarTipoPedido('PARA_LLEVAR');
+      result.current.agregarProducto(latte);
+    });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(await db.mesas.get(1)).toMatchObject({ estado: 'LIBRE' });
+  });
+
   it('genera códigos de venta consecutivos en ventas seguidas', async () => {
     const { result } = renderHook(() => useComanda({ cajaSesionId: cajaSesion.id }));
     const codigos = [];

@@ -24,3 +24,27 @@ export async function cambiarEstadoMesa(id, estado) {
 
   return db.mesas.get(id);
 }
+
+export async function liberarMesasOcupadasSinPedidoPendiente() {
+  return db.transaction('rw', db.mesas, db.pedidos, async () => {
+    const mesasOcupadas = await db.mesas.where('estado').equals('OCUPADA').toArray();
+    const idsLiberadas = [];
+
+    for (const mesa of mesasOcupadas) {
+      if (mesa.id === 0) continue;
+
+      const pedidosPendientes = await db.pedidos
+        .where('mesaId')
+        .equals(mesa.id)
+        .filter((pedido) => pedido.estado !== 'PAGADO')
+        .count();
+
+      if (pedidosPendientes === 0) {
+        await db.mesas.update(mesa.id, { estado: 'LIBRE' });
+        idsLiberadas.push(mesa.id);
+      }
+    }
+
+    return idsLiberadas;
+  });
+}

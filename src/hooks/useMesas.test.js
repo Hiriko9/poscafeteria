@@ -10,7 +10,7 @@ import { useMesas } from './useMesas.js';
 describe('useMesas', () => {
   beforeEach(async () => {
     await resetDatabase();
-    await db.mesas.add({ id: 1, numero: 1, estado: 'OCUPADA' });
+    await db.mesas.add({ id: 1, numero: 1, estado: 'LIBRE' });
   });
   afterEach(() => db.close());
 
@@ -22,12 +22,18 @@ describe('useMesas', () => {
     }));
 
     await waitFor(() => expect(result.current.mesas.estado).toBe('LISTO'));
-    expect(result.current.mesas.mesas[0].estado).toBe('OCUPADA');
+    expect(result.current.mesas.mesas[0].estado).toBe('LIBRE');
 
     act(() => {
       result.current.comanda.agregarProducto({ id: 1, nombre: 'Latte', precio: 1000 });
       result.current.comanda.seleccionarMesa(1);
     });
+    await waitFor(async () => {
+      expect(await db.mesas.get(1)).toMatchObject({ estado: 'OCUPADA' });
+    });
+    await waitFor(() =>
+      expect(result.current.mesas.mesas[0].estado).toBe('OCUPADA')
+    );
     await act(async () => {
       await result.current.comanda.confirmarPago('EFECTIVO', 1200);
     });

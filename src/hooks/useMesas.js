@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listarMesas } from '../db/repositories/mesaRepository.js';
+import {
+  listarMesas,
+  liberarMesasOcupadasSinPedidoPendiente
+} from '../db/repositories/mesaRepository.js';
 
 export function useMesas() {
   const [mesas, setMesas] = useState([]);
@@ -30,11 +33,15 @@ export function useMesas() {
 
   useEffect(() => {
     let activo = true;
-    const actualizarTrasVenta = () => {
+    const actualizarMesas = () => {
       void cargarMesas(false);
     };
 
-    listarMesas()
+    window.addEventListener('pos:venta-registrada', actualizarMesas);
+    window.addEventListener('pos:mesas-actualizadas', actualizarMesas);
+
+    liberarMesasOcupadasSinPedidoPendiente()
+      .then(() => listarMesas())
       .then((resultado) => {
         if (!activo) return;
         setMesas(resultado);
@@ -45,11 +52,11 @@ export function useMesas() {
         setEstado('ERROR');
         setError(`No se pudieron cargar las mesas: ${errorCarga.message}`);
       });
-    window.addEventListener('pos:venta-registrada', actualizarTrasVenta);
 
     return () => {
       activo = false;
-      window.removeEventListener('pos:venta-registrada', actualizarTrasVenta);
+      window.removeEventListener('pos:venta-registrada', actualizarMesas);
+      window.removeEventListener('pos:mesas-actualizadas', actualizarMesas);
     };
   }, [cargarMesas]);
 
