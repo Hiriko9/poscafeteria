@@ -7,6 +7,7 @@ import { cerrarCajaZ as calcularCierre } from '../domain/usecases/cerrarCajaZ.js
 import {
   abrirCaja as persistirApertura,
   cerrarCaja as persistirCierre,
+  obtenerResumenCierreCaja,
   obtenerSesionAbierta
 } from '../db/repositories/cajaRepository.js';
 
@@ -14,6 +15,7 @@ export function useCaja() {
   const [sesion, setSesion] = useState(null);
   const [estado, setEstado] = useState('CARGANDO');
   const [error, setError] = useState(null);
+  const [resumenCierre, setResumenCierre] = useState(null);
 
   const refrescarSesion = useCallback(async () => {
     setEstado('CARGANDO');
@@ -54,6 +56,23 @@ export function useCaja() {
     };
   }, []);
 
+  const cargarResumenCierre = useCallback(async () => {
+    if (!sesion?.id) {
+      throw new Error('No hay una sesión de caja abierta para consultar el arqueo.');
+    }
+
+    try {
+      const resumen = await obtenerResumenCierreCaja(sesion.id);
+      setResumenCierre(resumen);
+      setError(null);
+      return resumen;
+    } catch (errorResumen) {
+      const mensaje = `No se pudo consultar el arqueo de caja: ${errorResumen.message}`;
+      setError(mensaje);
+      throw new Error(mensaje, { cause: errorResumen });
+    }
+  }, [sesion?.id]);
+
   const abrir = useCallback(async (montoInicial) => {
     setError(null);
     const validacion = validarMontoInicial(montoInicial);
@@ -71,6 +90,7 @@ export function useCaja() {
       const sesionAbierta = await persistirApertura(apertura);
       setSesion(sesionAbierta);
       setEstado('CAJA_ABIERTA');
+      setResumenCierre(null);
       return sesionAbierta;
     } catch (errorApertura) {
       setError(`No se pudo abrir la caja: ${errorApertura.message}`);
@@ -82,31 +102,35 @@ export function useCaja() {
     setError(null);
 
     try {
-      const sesionCerrada = await persistirCierre({ montoCierreEfectivo, montoCierreTarjetas });
-      const ventasEfectivo =
-        montoCierreEfectivo - sesionCerrada.montoInicial - sesionCerrada.diferencia;
+      if (!sesion?.id) {
+        throw new Error('No hay una sesión de caja abierta para cerrar.');
+      }
+      const resumen = await obtenerResumenCierreCaja(sesion.id);
       const cierreCalculado = calcularCierre({
-        montoInicial: sesionCerrada.montoInicial,
-        ventasEfectivo,
+        montoInicial: resumen.montoInicial,
+        ventasEfectivo: resumen.ventasEfectivo,
         montoCierreEfectivo,
-        montoCierreTarjetas,
-        fechaCierre: sesionCerrada.fechaCierre
+        montoCierreTarjetas
       });
+      const sesionCerrada = await persistirCierre({ montoCierreEfectivo, montoCierreTarjetas });
 
       setSesion(null);
       setEstado('CAJA_CERRADA');
+      setResumenCierre(null);
       return { ...sesionCerrada, ...cierreCalculado };
     } catch (errorCierre) {
       setError(`No se pudo cerrar la caja: ${errorCierre.message}`);
       throw errorCierre;
     }
-  }, []);
+  }, [sesion?.id]);
 
   return {
     sesion,
     estado,
     error,
+    resumenCierre,
     refrescarSesion,
+    cargarResumenCierre,
     abrirCaja: abrir,
     cerrarCajaZ: cerrar
   };

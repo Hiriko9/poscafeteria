@@ -6,8 +6,46 @@ function validarMonto(monto, nombre) {
   }
 }
 
+async function obtenerVentasEfectivoSesion(sesionId) {
+  const pedidos = await db.pedidos.where('cajaSesionId').equals(sesionId).toArray();
+  const pedidoIds = pedidos.map(({ id }) => id);
+  const pagos = pedidoIds.length
+    ? await db.pagos.where('pedidoId').anyOf(pedidoIds).toArray()
+    : [];
+
+  return pagos
+    .filter(({ metodo }) => metodo === 'EFECTIVO')
+    .reduce((total, pago) => total + pago.montoCobrado, 0);
+}
+
 export async function obtenerSesionAbierta() {
   return db.cajaSesion.where('estado').equals('ABIERTA').first();
+}
+
+export async function obtenerResumenCierreCaja(sesionId) {
+  if (!Number.isSafeInteger(sesionId) || sesionId <= 0) {
+    throw new TypeError('La sesión de caja debe tener un identificador válido.');
+  }
+
+  const sesion = await db.cajaSesion.get(sesionId);
+
+  if (!sesion || sesion.estado !== 'ABIERTA') {
+    throw new Error('No se encontró una sesión ABIERTA para calcular el cierre.');
+  }
+
+  const ventasEfectivo = await obtenerVentasEfectivoSesion(sesionId);
+  const efectivoEsperado = sesion.montoInicial + ventasEfectivo;
+
+  if (!Number.isSafeInteger(efectivoEsperado)) {
+    throw new RangeError('El efectivo esperado excede el monto máximo seguro en céntimos.');
+  }
+
+  return {
+    sesionId,
+    montoInicial: sesion.montoInicial,
+    ventasEfectivo,
+    efectivoEsperado
+  };
 }
 
 export async function abrirCaja({ montoInicial, fechaApertura = new Date().toISOString() }) {
@@ -46,14 +84,7 @@ export async function cerrarCaja({
         throw new Error('No hay una sesión ABIERTA para cerrar.');
       }
 
-      const pedidos = await db.pedidos.where('cajaSesionId').equals(sesion.id).toArray();
-      const pedidoIds = pedidos.map(({ id }) => id);
-      const pagos = pedidoIds.length
-        ? await db.pagos.where('pedidoId').anyOf(pedidoIds).toArray()
-        : [];
-      const ventasEfectivo = pagos
-        .filter(({ metodo }) => metodo === 'EFECTIVO')
-        .reduce((total, pago) => total + pago.montoCobrado, 0);
+      const ventasEfectivo = await obtenerVentasEfectivoSesion(sesion.id);
       const efectivoEsperado = sesion.montoInicial + ventasEfectivo;
       const diferencia = montoCierreEfectivo - efectivoEsperado;
 
