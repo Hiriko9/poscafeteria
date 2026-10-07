@@ -11,3 +11,7 @@ ehthumbs.db
 Icon?
 *.swp
 *.swo
+
+.env
+.env.*
+!.env.example
