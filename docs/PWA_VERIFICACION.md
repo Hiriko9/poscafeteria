@@ -1,6 +1,6 @@
 # Verificación manual de la PWA
 
-1. Ejecuta `pnpm build` y `pnpm preview`, abre la URL local de preview en Chrome y espera a que cargue la aplicación.
+1. Ejecuta `corepack pnpm build` y `corepack pnpm preview`, abre la URL local de preview en Chrome y espera a que cargue la aplicación.
 2. Abre DevTools > **Application** > **Manifest**. Comprueba el nombre «Café POS», orientación horizontal, colores y los tres íconos. La sección debe identificar la aplicación como instalable.
 3. En **Application** > **Service Workers**, comprueba que `/service-worker.js` esté activo y controlando la página. Al publicar otro build, confirma que aparece una actualización esperando; no se activa sola.
 4. En **Application** > **Cache Storage**, comprueba que exista una caché `pos-cafe-*` con `index.html`, assets generados, manifest, íconos y fuentes locales.
