@@ -112,6 +112,7 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
     () => (state.items.length ? calcularTotales(state.items) : { subtotal: 0, igv: 0, total: 0 }),
     [state.items]
   );
+  const calcularSubtotalLinea = useCallback((item) => calcularTotales([item]).subtotal, []);
   const mesaSeleccionada =
     (state.tipoPedido === TIPOS_PEDIDO.PARA_LLEVAR && state.mesaId === MESA_VIRTUAL_ID) ||
     (state.tipoPedido === TIPOS_PEDIDO.COMER_AQUI &&
@@ -267,7 +268,14 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
         const ticket = {
           ...payload.pedido,
           id: pedidoId,
-          detalles: payload.detalles,
+          detalles: payload.detalles.map((detalle) => ({
+            ...detalle,
+            subtotalLinea: detalle.precioUnitario * detalle.cantidad,
+            nombreProducto:
+              state.items.find(
+                (item) => (item.id ?? item.productoId) === detalle.productoId
+              )?.nombre ?? `Producto #${detalle.productoId}`
+          })),
           pago: payload.pago
         };
 
@@ -305,6 +313,7 @@ export function useComanda({ cajaSesionId, onVentaRegistrada } = {}) {
     ...state,
     state,
     totales,
+    calcularSubtotalLinea,
     puedeCobrar,
     vuelto,
     agregarProducto,

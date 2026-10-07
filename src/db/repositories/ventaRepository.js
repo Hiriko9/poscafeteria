@@ -64,16 +64,27 @@ export async function listarHistorial() {
 
   const pedidoIds = pedidos.map(({ id }) => id);
   const detalles = await db.detallePedido.where('pedidoId').anyOf(pedidoIds).toArray();
+  const pagos = await db.pagos.where('pedidoId').anyOf(pedidoIds).toArray();
+  const productoIds = [...new Set(detalles.map(({ productoId }) => productoId))];
+  const productos = productoIds.length ? await db.productos.bulkGet(productoIds) : [];
   const detallesPorPedido = new Map();
+  const pagoPorPedido = new Map(pagos.map((pago) => [pago.pedidoId, pago]));
+  const productoPorId = new Map(productos.filter(Boolean).map((producto) => [producto.id, producto]));
 
   for (const detalle of detalles) {
     const lista = detallesPorPedido.get(detalle.pedidoId) ?? [];
-    lista.push(detalle);
+    lista.push({
+      ...detalle,
+      subtotalLinea: detalle.precioUnitario * detalle.cantidad,
+      nombreProducto:
+        productoPorId.get(detalle.productoId)?.nombre ?? `Producto eliminado (#${detalle.productoId})`
+    });
     detallesPorPedido.set(detalle.pedidoId, lista);
   }
 
   return pedidos.map((pedido) => ({
     ...pedido,
-    detalles: detallesPorPedido.get(pedido.id) ?? []
+    detalles: detallesPorPedido.get(pedido.id) ?? [],
+    pago: pagoPorPedido.get(pedido.id) ?? null
   }));
 }

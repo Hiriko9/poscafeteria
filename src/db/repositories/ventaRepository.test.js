@@ -69,6 +69,7 @@ describe('ventaRepository', () => {
 
   it('lista historial de más reciente a más antiguo con sus detalles', async () => {
     await db.mesas.add({ id: 1, numero: 1, estado: 'LIBRE' });
+    await db.productos.add({ id: 2, nombre: 'Muffin', categoria: 'REPOSTERIA', precio: 850, activo: true });
     await registrarVenta({
       pedido: pedidoBase({ codigoVenta: 'VEN-2026-0001' }),
       detalles: detallesBase,
@@ -92,5 +93,7 @@ describe('ventaRepository', () => {
     expect(historial[0].detalles).toEqual([
       expect.objectContaining({ productoId: 2, nota: 'Sin azúcar' })
     ]);
+    expect(historial[0].pago).toEqual(expect.objectContaining(pagoBase));
+    expect(historial[0].detalles[0].nombreProducto).toBe('Muffin');
   });
 });

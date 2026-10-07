@@ -2,10 +2,17 @@ import { useCallback, useMemo, useState } from 'react';
 import { useComandaContext } from '../../context/ComandaContext.jsx';
 import { useMesas } from '../../hooks/useMesas.js';
 import { MESA_VIRTUAL_ID, TIPOS_PEDIDO } from '../../utils/constants.js';
+import HistorialPanel from '../historial/HistorialPanel.jsx';
 import MesaCard from './MesaCard.jsx';
 
-export default function MesasPanel() {
-  const [pestana, setPestana] = useState('mesas');
+export default function MesasPanel({
+  pestanaControlada,
+  onCambiarPestana,
+  onSeleccionarVenta
+}) {
+  const [pestanaLocal, setPestanaLocal] = useState('mesas');
+  const pestana = pestanaControlada ?? pestanaLocal;
+  const cambiarPestana = onCambiarPestana ?? setPestanaLocal;
   const { mesas, estado, error } = useMesas();
   const comanda = useComandaContext();
 
@@ -36,10 +43,10 @@ export default function MesasPanel() {
 
       event.preventDefault();
       const siguiente = pestanas[indiceSiguiente];
-      setPestana(siguiente);
+      cambiarPestana(siguiente);
       document.getElementById(`tab-${siguiente}`)?.focus();
     },
-    [pestana]
+    [cambiarPestana, pestana]
   );
 
   return (
@@ -52,7 +59,7 @@ export default function MesasPanel() {
             pestana === 'mesas' ? 'border-cafe text-cafe' : 'border-transparent text-cafe/60'
           }`}
           id="tab-mesas"
-          onClick={() => setPestana('mesas')}
+          onClick={() => cambiarPestana('mesas')}
           onKeyDown={manejarTeclasPestanas}
           role="tab"
           tabIndex={pestana === 'mesas' ? 0 : -1}
@@ -67,7 +74,7 @@ export default function MesasPanel() {
             pestana === 'historial' ? 'border-cafe text-cafe' : 'border-transparent text-cafe/60'
           }`}
           id="tab-historial"
-          onClick={() => setPestana('historial')}
+          onClick={() => cambiarPestana('historial')}
           onKeyDown={manejarTeclasPestanas}
           role="tab"
           tabIndex={pestana === 'historial' ? 0 : -1}
@@ -79,7 +86,7 @@ export default function MesasPanel() {
 
       {pestana === 'historial' ? (
         <div aria-labelledby="tab-historial" id="panel-historial" role="tabpanel">
-          <p>Historial: disponible en la siguiente fase</p>
+          <HistorialPanel onSeleccionarVenta={onSeleccionarVenta} />
         </div>
       ) : (
         <div aria-labelledby="tab-mesas" className="flex flex-col gap-4" id="panel-mesas" role="tabpanel">

@@ -8,15 +8,43 @@ import CierreCajaZModal from './components/modals/CierreCajaZModal.jsx';
 import TopBar from './components/layout/TopBar.jsx';
 import MesasPanel from './components/mesas/MesasPanel.jsx';
 import CatalogoPanel from './components/catalogo/CatalogoPanel.jsx';
+import ComandaPanel from './components/comanda/ComandaPanel.jsx';
+import PagoPanel from './components/pago/PagoPanel.jsx';
+import TicketConfirmado from './components/pago/TicketConfirmado.jsx';
 
 function POSLayout() {
   const { estado, error: errorCaja } = useCajaContext();
   const comanda = useComandaContext();
   const { mostrarToast } = useToast();
   const [mostrarCierre, setMostrarCierre] = useState(false);
+  const [pestanaMesas, setPestanaMesas] = useState('mesas');
+  const [vistaColumnaComanda, setVistaColumnaComanda] = useState('COMANDA');
+  const [ventaHistorial, setVentaHistorial] = useState(null);
   const cajaCerrada = estado === 'CAJA_CERRADA';
   const cargando = estado === 'CARGANDO';
   const bloqueada = cajaCerrada || cargando || estado === 'ERROR';
+
+  useEffect(() => {
+    if (comanda.estado === 'PAGO_EXITOSO' && pestanaMesas === 'mesas') {
+      setVistaColumnaComanda('TICKET');
+    }
+  }, [comanda.estado, pestanaMesas]);
+
+  const cambiarPestanaMesas = useCallback((pestana) => {
+    setPestanaMesas(pestana);
+    if (pestana === 'mesas') {
+      setVentaHistorial(null);
+      setVistaColumnaComanda('COMANDA');
+    }
+  }, []);
+  const seleccionarVentaHistorial = useCallback((venta) => {
+    setVentaHistorial(venta);
+    setVistaColumnaComanda('HISTORIAL');
+  }, []);
+  const iniciarNuevaVenta = useCallback(() => {
+    comanda.limpiar();
+    setVistaColumnaComanda('COMANDA');
+  }, [comanda.limpiar]);
 
   const solicitarCierre = useCallback(() => {
     if (comanda.items.length > 0 && comanda.estado !== 'PAGO_EXITOSO') {
@@ -39,12 +67,32 @@ function POSLayout() {
           aria-label="Mesas e historial"
           className="col-span-3 min-w-0 border-r border-arena"
         >
-          <MesasPanel />
+          <MesasPanel
+            onCambiarPestana={cambiarPestanaMesas}
+            onSeleccionarVenta={seleccionarVentaHistorial}
+            pestanaControlada={pestanaMesas}
+          />
         </section>
         <section aria-label="Catálogo" className="col-span-5 min-w-0 border-r border-arena">
           <CatalogoPanel />
         </section>
-        <section aria-label="Comanda y pago" className="col-span-4 min-w-0" />
+        <section aria-label="Comanda y pago" className="col-span-4 min-w-0">
+          {vistaColumnaComanda === 'COMANDA' && (
+            <ComandaPanel onCobrar={() => setVistaColumnaComanda('PAGO')} />
+          )}
+          {vistaColumnaComanda === 'PAGO' && (
+            <PagoPanel
+              onPagoExitoso={() => setVistaColumnaComanda('TICKET')}
+              onVolver={() => setVistaColumnaComanda('COMANDA')}
+            />
+          )}
+          {vistaColumnaComanda === 'TICKET' && comanda.ticket && (
+            <TicketConfirmado onNuevaVenta={iniciarNuevaVenta} ticket={comanda.ticket} />
+          )}
+          {vistaColumnaComanda === 'HISTORIAL' && ventaHistorial && (
+            <TicketConfirmado soloLectura ticket={ventaHistorial} />
+          )}
+        </section>
       </div>
       {cargando && (
         <div

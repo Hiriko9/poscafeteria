@@ -80,13 +80,13 @@ describe('MesasPanel', () => {
     expect(await db.mesas.get(1)).toMatchObject({ estado: 'LIBRE' });
   });
 
-  it('muestra las pestañas accesibles y el texto provisional de historial', async () => {
+  it('muestra las pestañas accesibles y el estado vacío del historial', async () => {
     renderMesas();
 
     const tablist = screen.getByRole('tablist', { name: 'Secciones de la columna' });
     fireEvent.click(withinTab(tablist, 'Historial'));
 
-    expect(await screen.findByText('Historial: disponible en la siguiente fase')).toBeInTheDocument();
+    expect(await screen.findByText('Todavía no hay ventas registradas.')).toBeInTheDocument();
   });
 });
 
